@@ -1,0 +1,30 @@
+{
+  "name": "gateway",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate --config drizzle.config.sqlite.ts",
+    "db:generate:pg": "drizzle-kit generate --config drizzle.config.pg.ts",
+    "db:migrate": "bun run src/db/migrate.ts",
+    "test": "bun test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.6.1",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.14",
+    "postgres": "^3.4.9",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5"
+  }
+}
