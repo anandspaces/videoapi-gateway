@@ -1,12 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Hono } from "hono";
-import type { DbAccess } from "./db/access.ts";
-import { requireDatabaseUrlFromEnv } from "./db/databaseUrl.ts";
+import { requireDatabaseUrlFromEnv } from "../../src/db/databaseUrl.ts";
 
 describe("gateway integration", () => {
   let upstream: ReturnType<typeof Bun.serve>;
   let app: Hono;
-  let dbAccess: DbAccess;
 
   beforeAll(async () => {
     requireDatabaseUrlFromEnv();
@@ -31,14 +29,14 @@ describe("gateway integration", () => {
 
     process.env.UPSTREAM_BASE_URL = `http://127.0.0.1:${upstream.port}`;
 
-    const { loadEnv } = await import("./env.ts");
-    const { applyMigrations } = await import("./db/migrate.ts");
-    const { createDbAccess } = await import("./db/access.ts");
-    const { buildGatewayApp } = await import("./gatewayApp.ts");
+    const { loadEnv } = await import("../../src/env.ts");
+    const { applyMigrations } = await import("../../src/db/migrate.ts");
+    const { createDbAccess } = await import("../../src/db/access.ts");
+    const { buildGatewayApp } = await import("../../src/gatewayApp.ts");
 
     const env = loadEnv();
     await applyMigrations(env.DATABASE_URL);
-    dbAccess = createDbAccess(env.DATABASE_URL, env.API_KEY_PEPPER);
+    const dbAccess = createDbAccess(env.DATABASE_URL, env.API_KEY_PEPPER);
     app = buildGatewayApp({ env, dbAccess });
   });
 

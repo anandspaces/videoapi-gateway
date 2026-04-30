@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Hono } from "hono";
 import postgres from "postgres";
-import { requireDatabaseUrlFromEnv } from "../db/databaseUrl.ts";
+import { requireDatabaseUrlFromEnv } from "../../src/db/databaseUrl.ts";
 
 describe("auth register and login", () => {
   let upstream: ReturnType<typeof Bun.serve>;
@@ -24,10 +24,10 @@ describe("auth register and login", () => {
     });
     process.env.UPSTREAM_BASE_URL = `http://127.0.0.1:${upstream.port}`;
 
-    const { loadEnv } = await import("../env.ts");
-    const { applyMigrations } = await import("../db/migrate.ts");
-    const { createDbAccess } = await import("../db/access.ts");
-    const { buildGatewayApp } = await import("../gatewayApp.ts");
+    const { loadEnv } = await import("../../src/env.ts");
+    const { applyMigrations } = await import("../../src/db/migrate.ts");
+    const { createDbAccess } = await import("../../src/db/access.ts");
+    const { buildGatewayApp } = await import("../../src/gatewayApp.ts");
 
     const env = loadEnv();
     await applyMigrations(env.DATABASE_URL);
@@ -119,9 +119,9 @@ describe("auth register and login", () => {
 
   it("keeps registration open even when ALLOW_PUBLIC_REGISTRATION is false", async () => {
     process.env.ALLOW_PUBLIC_REGISTRATION = "false";
-    const { loadEnv } = await import("../env.ts");
-    const { createDbAccess } = await import("../db/access.ts");
-    const { buildGatewayApp } = await import("../gatewayApp.ts");
+    const { loadEnv } = await import("../../src/env.ts");
+    const { createDbAccess } = await import("../../src/db/access.ts");
+    const { buildGatewayApp } = await import("../../src/gatewayApp.ts");
 
     const env = loadEnv();
     const dbAccess = createDbAccess(env.DATABASE_URL, env.API_KEY_PEPPER);

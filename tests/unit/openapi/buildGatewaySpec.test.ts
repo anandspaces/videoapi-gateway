@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { Context } from "hono";
-import type { Env } from "../env.ts";
-import { buildGatewayOpenApiSpec } from "./buildGatewaySpec.ts";
+import type { Env } from "../../../src/env.ts";
+import { buildGatewayOpenApiSpec } from "../../../src/openapi/buildGatewaySpec.ts";
 
 function fakeContext(url: string): Context {
   return {

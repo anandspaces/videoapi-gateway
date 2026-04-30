@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeGatewayPathname } from "./apiPath.ts";
+import { normalizeGatewayPathname } from "../../../src/auth/apiPath.ts";
 
 describe("normalizeGatewayPathname", () => {
   it("leaves full paths unchanged", () => {

@@ -29,10 +29,19 @@ bun install
 bun run db:migrate   # apply PostgreSQL migrations from DATABASE_URL
 bun run dev          # watch mode
 bun run start        # production-style
-bun test
 ```
 
-Schema changes: `bun run db:generate` for PostgreSQL migration artifacts.
+### Testing
+
+| Command | Purpose |
+|---------|---------|
+| `bun run test:unit` | Fast unit tests (`tests/unit/`), no database. |
+| `bun run test:integration` | HTTP + Postgres (`tests/integration/`). Requires **`DATABASE_URL`**. |
+| `bun run test` | Full suite (unit + integration). Integration layer still needs **`DATABASE_URL`**. |
+
+**Regression / release gate:** run `bun run test` before merge when applicable. Prefer adding a failing test first for bugfixes when possible (optionally cite the ticket in the test name).
+
+Schema changes: `bun run db:generate` for PostgreSQL migration artifacts (requires **`DATABASE_URL`**).
 
 ## Interactive docs (Swagger UI)
 

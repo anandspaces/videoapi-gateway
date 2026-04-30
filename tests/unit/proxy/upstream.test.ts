@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildUpstreamHeaders, joinUpstreamUrl } from "./upstream.ts";
+import { buildUpstreamHeaders, joinUpstreamUrl } from "../../../src/proxy/upstream.ts";
 
 describe("joinUpstreamUrl", () => {
   it("joins base and path", () => {

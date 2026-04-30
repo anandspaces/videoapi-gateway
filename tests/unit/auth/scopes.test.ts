@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { pathUnderApiV1, requiredScopeForPath, scopesAllow } from "./scopes.ts";
+import {
+  pathUnderApiV1,
+  requiredScopeForPath,
+  scopesAllow,
+} from "../../../src/auth/scopes.ts";
 
 describe("pathUnderApiV1", () => {
   it("extracts suffix paths", () => {
