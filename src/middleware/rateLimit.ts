@@ -5,6 +5,11 @@ type Bucket = { windowId: number; count: number };
 
 const buckets = new Map<string, Bucket>();
 
+/** Resets sliding-window counters (unit tests only). */
+export function resetRateLimitBucketsForTests(): void {
+  buckets.clear();
+}
+
 function windowId(now: number): number {
   return Math.floor(now / 60_000);
 }

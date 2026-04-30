@@ -37,9 +37,11 @@ bun run start        # production-style
 |---------|---------|
 | `bun run test:unit` | Fast unit tests (`tests/unit/`), no database. |
 | `bun run test:integration` | HTTP + Postgres (`tests/integration/`). Requires **`DATABASE_URL`**. |
-| `bun run test` | Full suite (unit + integration). Integration layer still needs **`DATABASE_URL`**. |
+| `bun run test` | Full suite: **`tests/unit` first**, then **`tests/integration`** (two phases so fast failures surface before Postgres work). **`DATABASE_URL`** required for the second phase. |
 
 **Regression / release gate:** run `bun run test` before merge when applicable. Prefer adding a failing test first for bugfixes when possible (optionally cite the ticket in the test name).
+
+**Module → tests (quick map):** auth (`scopes`, `apiPath`, `jwt`), `http/response`, `proxy/upstream`, `openapi/buildGatewaySpec`, `crypto/hash`, `crypto/password`, `db/databaseUrl`, `middleware/rateLimit` → `tests/unit/`. End-to-end HTTP + DB flows (register/login/project credits, admin consumer + JWT rejection) → `tests/integration/`. Not unit-isolated yet: `gatewayApp`, routes, `db/access`, `verifyApiKey`, `loadEnv`, `migrate` — covered indirectly by integration tests; add narrower tests when those areas churn.
 
 Schema changes: `bun run db:generate` for PostgreSQL migration artifacts (requires **`DATABASE_URL`**).
 
