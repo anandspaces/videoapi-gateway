@@ -6,7 +6,7 @@ Bun + TypeScript reverse proxy: consumers authenticate with **gateway-issued JWT
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | Default `file:./data/gateway.sqlite`. Use `postgresql://...` in production. |
+| `DATABASE_URL` | PostgreSQL connection string. Default `postgresql://postgres:root@localhost:5432/dt_videoapi_db`. |
 | `API_KEY_PEPPER` | Secret mixed into SHA-256 of API keys (min 8 characters). |
 | `UPSTREAM_BASE_URL` | Default `https://api.magicroll.ai/api/v1`. |
 | `UPSTREAM_BEARER_TOKEN` | Enterprise Bearer token for Magicroll. |
@@ -23,13 +23,13 @@ Bun + TypeScript reverse proxy: consumers authenticate with **gateway-issued JWT
 
 ```bash
 bun install
-bun run db:migrate   # apply migrations (SQLite or Postgres from DATABASE_URL)
+bun run db:migrate   # apply PostgreSQL migrations from DATABASE_URL
 bun run dev          # watch mode
 bun run start        # production-style
 bun test
 ```
 
-Schema changes: `bun run db:generate` (SQLite) and `bun run db:generate:pg` for PostgreSQL migration artifacts.
+Schema changes: `bun run db:generate` for PostgreSQL migration artifacts.
 
 ## Interactive docs (Swagger UI)
 

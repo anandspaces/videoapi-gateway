@@ -1,18 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { Database } from "bun:sqlite";
-import { mkdtempSync, rmSync } from "fs";
 import type { Hono } from "hono";
-import { tmpdir } from "os";
-import { join } from "path";
+import postgres from "postgres";
 
 describe("auth register and login", () => {
   let upstream: ReturnType<typeof Bun.serve>;
-  let tmpDir: string;
   let app: Hono;
 
   beforeAll(async () => {
-    tmpDir = mkdtempSync(join(tmpdir(), "gw-auth-test-"));
-    process.env.DATABASE_URL = `file:${join(tmpDir, "db.sqlite")}`;
+    process.env.DATABASE_URL ??= "postgresql://postgres:root@localhost:5432/dt_videoapi_db";
     process.env.API_KEY_PEPPER = "12345678901234567890123456789012";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "admin-bootstrap-token-32chars-min";
     process.env.JWT_SECRET = "12345678901234567890123456789012";
@@ -41,7 +36,6 @@ describe("auth register and login", () => {
 
   afterAll(() => {
     upstream?.stop();
-    rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it("register then login returns bearer-capable tokens", async () => {
@@ -64,11 +58,14 @@ describe("auth register and login", () => {
     expect(regJson.status).toBe(1);
     expect(regJson.data.access_token.split(".")).toHaveLength(3);
 
-    const db = new Database(join(tmpDir, "db.sqlite"));
-    const consumerRow = db
-      .query("select metadata from consumers where email = ? limit 1")
-      .get("alice@example.com") as { metadata: string | null } | null;
-    db.close();
+    const sql = postgres(
+      process.env.DATABASE_URL ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db",
+    );
+    const consumerRows = await sql<{ metadata: string | null }[]>`
+      select metadata from consumers where email = ${"alice@example.com"} limit 1
+    `;
+    await sql.end();
+    const consumerRow = consumerRows[0] ?? null;
     expect(consumerRow?.metadata).toBe(JSON.stringify({ credits: 10 }));
 
     const login = await app.fetch(
@@ -97,7 +94,10 @@ describe("auth register and login", () => {
       }),
     );
     expect(proxied.status).toBe(200);
-    const proxiedJson = (await proxied.json()) as { status: number; data: { upstream: { ok: boolean } } };
+    const proxiedJson = (await proxied.json()) as {
+      status: number;
+      data: { upstream: { ok: boolean } };
+    };
     expect(proxiedJson.status).toBe(1);
     expect(proxiedJson.data.upstream.ok).toBe(true);
 

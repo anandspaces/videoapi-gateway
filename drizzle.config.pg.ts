@@ -5,6 +5,6 @@ export default defineConfig({
   out: "./drizzle-pg",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://localhost:5432/gateway",
+    url: process.env.DATABASE_URL ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db",
   },
 });

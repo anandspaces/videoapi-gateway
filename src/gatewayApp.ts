@@ -149,10 +149,14 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
       });
       return new Response(
         JSON.stringify(
-          envelope(upstream.status, upstream.ok ? "Request successful" : "Upstream request failed", {
-            upstream: upstreamJson,
-            status_code: upstream.status,
-          }),
+          envelope(
+            upstream.status,
+            upstream.ok ? "Request successful" : "Upstream request failed",
+            {
+              upstream: upstreamJson,
+              status_code: upstream.status,
+            },
+          ),
         ),
         {
           status: upstream.status,

@@ -43,7 +43,10 @@ export function adminRoutes() {
     if (!parsed.success) {
       logWarn("admin.consumers.create.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }
@@ -81,7 +84,10 @@ export function adminRoutes() {
     if (!parsed.success) {
       logWarn("admin.api_keys.create.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }

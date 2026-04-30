@@ -74,7 +74,10 @@ export function authRoutes(): Hono {
     if (!parsed.success) {
       logWarn("auth.register.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }
@@ -129,7 +132,10 @@ export function authRoutes(): Hono {
     if (!parsed.success) {
       logWarn("auth.login.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }
@@ -192,7 +198,10 @@ export function authRoutes(): Hono {
     if (!parsed.success) {
       logWarn("auth.admin_token.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }
@@ -230,7 +239,10 @@ export function authRoutes(): Hono {
     if (!parsed.success) {
       logWarn("auth.admin_api_key.validation_failed", { requestId });
       return c.json(
-        envelope(400, "Validation error", { error: "bad_request", details: parsed.error.flatten() }),
+        envelope(400, "Validation error", {
+          error: "bad_request",
+          details: parsed.error.flatten(),
+        }),
         400,
       );
     }

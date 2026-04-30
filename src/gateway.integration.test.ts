@@ -1,20 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "fs";
 import type { Hono } from "hono";
-import { tmpdir } from "os";
-import { join } from "path";
 import type { DbAccess } from "./db/access.ts";
 
 describe("gateway integration", () => {
   let upstream: ReturnType<typeof Bun.serve>;
-  let tmpDir: string;
   let app: Hono;
   let dbAccess: DbAccess;
 
   beforeAll(async () => {
-    tmpDir = mkdtempSync(join(tmpdir(), "gw-test-"));
-    const dbPath = join(tmpDir, "db.sqlite");
-    process.env.DATABASE_URL = `file:${dbPath}`;
+    process.env.DATABASE_URL ??= "postgresql://postgres:root@localhost:5432/dt_videoapi_db";
     process.env.API_KEY_PEPPER = "12345678901234567890123456789012";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "admin-bootstrap-token-32chars-min";
     process.env.JWT_SECRET = "12345678901234567890123456789012";
@@ -49,7 +43,6 @@ describe("gateway integration", () => {
 
   afterAll(() => {
     upstream?.stop();
-    rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it("creates consumer and proxies with swapped bearer", async () => {

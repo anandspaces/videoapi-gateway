@@ -4,7 +4,7 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .optional()
-    .transform((v) => v ?? "file:./data/gateway.sqlite"),
+    .transform((v) => v ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db"),
   API_KEY_PEPPER: z.string().min(8, "API_KEY_PEPPER must be at least 8 chars"),
   UPSTREAM_BASE_URL: z.string().url().default("https://api.magicroll.ai/api/v1"),
   UPSTREAM_BEARER_TOKEN: z.string().min(1),
@@ -51,8 +51,4 @@ export function loadEnv(): Env {
     throw new Error(`Invalid environment: ${msg}`);
   }
   return parsed.data;
-}
-
-export function isPostgresUrl(url: string): boolean {
-  return url.startsWith("postgres://") || url.startsWith("postgresql://");
 }

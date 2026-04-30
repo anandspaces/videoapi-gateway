@@ -19,4 +19,3 @@ export function envelope<T>(httpCode: number, message: string, data: T): ApiEnve
     data,
   };
 }
-

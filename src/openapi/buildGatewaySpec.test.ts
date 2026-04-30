@@ -38,9 +38,10 @@ describe("buildGatewayOpenApiSpec", () => {
     const loginPath = paths["/api/v1/auth/login"] as { post?: { security?: unknown[] } };
     expect(registerPath.post?.security).toEqual([]);
     expect(loginPath.post?.security).toEqual([]);
-    const registerResponseSchema = (registerPath.post as { responses?: Record<string, unknown> }).responses?.[
-      "201"
-    ] as { content?: { "application/json"?: { schema?: Record<string, unknown> } } };
+    const registerResponseSchema = (registerPath.post as { responses?: Record<string, unknown> })
+      .responses?.["201"] as {
+      content?: { "application/json"?: { schema?: Record<string, unknown> } };
+    };
     expect(registerResponseSchema.content?.["application/json"]?.schema?.properties).toHaveProperty(
       "status",
     );

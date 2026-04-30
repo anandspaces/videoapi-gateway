@@ -98,8 +98,7 @@ function write(level: LogLevel, event: string, meta: LogMeta = {}) {
   const ts = new Date().toISOString();
   const cleanMeta = sanitizeMeta(meta);
   const module = inferModule(event);
-  const message =
-    typeof cleanMeta.message === "string" ? cleanMeta.message : inferMessage(event);
+  const message = typeof cleanMeta.message === "string" ? cleanMeta.message : inferMessage(event);
   const endpoint =
     typeof cleanMeta.path === "string"
       ? cleanMeta.path
@@ -133,4 +132,3 @@ export function logWarn(event: string, meta?: LogMeta) {
 export function logError(event: string, meta?: LogMeta) {
   write("ERROR", event, meta);
 }
-
