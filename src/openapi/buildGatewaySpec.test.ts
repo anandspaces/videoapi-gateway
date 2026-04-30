@@ -22,17 +22,17 @@ describe("buildGatewayOpenApiSpec", () => {
     expect(spec.servers).toEqual([
       {
         url: "https://gateway.example.com/api/v1",
-        description: "Gateway (proxied upstream)",
+        description: "Gateway API base",
       },
     ]);
     const paths = spec.paths as Record<string, unknown>;
+    expect(paths["/api/v1/health"]).toBeDefined();
     expect(paths["/api/v1/auth/register"]).toBeDefined();
     expect(paths["/api/v1/auth/login"]).toBeDefined();
     expect(paths["/api/v1/auth/token"]).toBeDefined();
-    expect(paths["/enterprise/balance/"]).toBeDefined();
-    expect(paths["/project/"]).toBeDefined();
-    expect(paths["/project/{project_id}/progress/"]).toBeDefined();
-    expect(paths["/text-to-video/voices/clone/"]).toBeDefined();
+    expect(paths["/api/v1/internal/admin/consumers"]).toBeDefined();
+    expect(paths["/api/v1/internal/admin/api-keys"]).toBeDefined();
+    expect(paths["/api/v1/{proxyPath}"]).toBeDefined();
 
     const registerPath = paths["/api/v1/auth/register"] as { post?: { security?: unknown[] } };
     const loginPath = paths["/api/v1/auth/login"] as { post?: { security?: unknown[] } };

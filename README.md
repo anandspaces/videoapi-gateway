@@ -33,8 +33,8 @@ Schema changes: `bun run db:generate` for PostgreSQL migration artifacts.
 
 ## Interactive docs (Swagger UI)
 
-- **`GET /api/v1/docs`** — Swagger UI for the merged spec (upstream Magicroll paths + gateway auth paths).
-- **`GET /api/v1/openapi.json`** — OpenAPI JSON; `servers` points at **this gateway** so **Try it out** hits `/api/v1/...` through the proxy.
+- **`GET /api/v1/docs`** — Swagger UI generated from this gateway backend routes.
+- **`GET /api/v1/openapi.json`** — OpenAPI JSON generated in-process by the gateway (no external `api-2.json` dependency).
 
 Use **Authorize** with `BearerAuth` and paste your JWT access token.
 
