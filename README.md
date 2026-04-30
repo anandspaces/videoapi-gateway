@@ -6,7 +6,7 @@ Bun + TypeScript reverse proxy: consumers authenticate with **gateway-issued JWT
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string. Default `postgresql://postgres:root@localhost:5432/dt_videoapi_db`. |
+| `DATABASE_URL` | **Required.** PostgreSQL connection string. Set via environment or `.env` (see `.env.example`; no URL is hardcoded in the app). |
 | `API_KEY_PEPPER` | Secret mixed into SHA-256 of API keys (min 8 characters). |
 | `UPSTREAM_BASE_URL` | Default `https://api.magicroll.ai/api/v1`. |
 | `UPSTREAM_BEARER_TOKEN` | Enterprise Bearer token for Magicroll. |
@@ -21,6 +21,8 @@ Bun + TypeScript reverse proxy: consumers authenticate with **gateway-issued JWT
 | `PROJECT_CREATE_CREDIT_COST` | Credits deducted on each `POST /api/v1/project/` (video create). Default `1`. |
 
 ## Commands
+
+Set `DATABASE_URL` before running migrations, Drizzle CLI, integration tests, or the server (e.g. `export DATABASE_URL=...` or copy `.env.example` to `.env` and load it).
 
 ```bash
 bun install

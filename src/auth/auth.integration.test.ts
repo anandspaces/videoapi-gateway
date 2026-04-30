@@ -1,13 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Hono } from "hono";
 import postgres from "postgres";
+import { requireDatabaseUrlFromEnv } from "../db/databaseUrl.ts";
 
 describe("auth register and login", () => {
   let upstream: ReturnType<typeof Bun.serve>;
   let app: Hono;
 
   beforeAll(async () => {
-    process.env.DATABASE_URL ??= "postgresql://postgres:root@localhost:5432/dt_videoapi_db";
+    requireDatabaseUrlFromEnv();
     process.env.API_KEY_PEPPER = "12345678901234567890123456789012";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "admin-bootstrap-token-32chars-min";
     process.env.JWT_SECRET = "12345678901234567890123456789012";
@@ -59,9 +60,7 @@ describe("auth register and login", () => {
     expect(regJson.status).toBe(1);
     expect(regJson.data.access_token.split(".")).toHaveLength(3);
 
-    const sql = postgres(
-      process.env.DATABASE_URL ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db",
-    );
+    const sql = postgres(requireDatabaseUrlFromEnv());
     const consumerRows = await sql<{ metadata: { credits?: number } | null }[]>`
       select metadata from consumers where email = ${email} limit 1
     `;

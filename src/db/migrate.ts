@@ -1,6 +1,7 @@
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import { migrate as migratePg } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { requireDatabaseUrlFromEnv } from "./databaseUrl.ts";
 
 export async function applyMigrations(databaseUrl: string): Promise<void> {
   const sql = postgres(databaseUrl, { max: 1 });
@@ -10,8 +11,7 @@ export async function applyMigrations(databaseUrl: string): Promise<void> {
 }
 
 async function main() {
-  const url =
-    process.env.DATABASE_URL ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db";
+  const url = requireDatabaseUrlFromEnv();
   await applyMigrations(url);
   console.log("Migrations applied.");
 }

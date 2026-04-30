@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z
-    .string()
-    .optional()
-    .transform((v) => v ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL must be set and non-empty"),
   API_KEY_PEPPER: z.string().min(8, "API_KEY_PEPPER must be at least 8 chars"),
   UPSTREAM_BASE_URL: z.string().url().default("https://api.magicroll.ai/api/v1"),
   UPSTREAM_BEARER_TOKEN: z.string().min(1),

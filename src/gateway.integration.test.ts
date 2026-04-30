@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Hono } from "hono";
 import type { DbAccess } from "./db/access.ts";
+import { requireDatabaseUrlFromEnv } from "./db/databaseUrl.ts";
 
 describe("gateway integration", () => {
   let upstream: ReturnType<typeof Bun.serve>;
@@ -8,7 +9,7 @@ describe("gateway integration", () => {
   let dbAccess: DbAccess;
 
   beforeAll(async () => {
-    process.env.DATABASE_URL ??= "postgresql://postgres:root@localhost:5432/dt_videoapi_db";
+    requireDatabaseUrlFromEnv();
     process.env.API_KEY_PEPPER = "12345678901234567890123456789012";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "admin-bootstrap-token-32chars-min";
     process.env.JWT_SECRET = "12345678901234567890123456789012";
