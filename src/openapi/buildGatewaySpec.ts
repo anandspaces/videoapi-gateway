@@ -17,36 +17,47 @@ function getRequestOrigin(c: Context, env: Env): string {
 
 function gatewayAuthPaths(origin: string): Record<string, unknown> {
   const servers = [{ url: origin, description: "Gateway" }];
+  const tokenDataSchema = {
+    type: "object",
+    properties: {
+      token_type: { type: "string", example: "Bearer" },
+      access_token: { type: "string", description: "Signed JWT access token." },
+      consumer_id: { type: "string", format: "uuid" },
+      key_id: { type: "string", format: "uuid" },
+      prefix: { type: "string" },
+      scopes: { type: "array", items: { type: "string" } },
+      issued_at: { type: "string", format: "date-time" },
+      expires_at: { type: "string", format: "date-time" },
+    },
+  };
+  const envelopeSchema = (dataSchema: Record<string, unknown>) => ({
+    type: "object",
+    properties: {
+      status: { type: "integer", enum: [-1, 0, 1, 2, 3] },
+      message: { type: "string" },
+      data: dataSchema,
+    },
+  });
   const tokenResponse = {
     "201": {
       description: "Issued",
       content: {
         "application/json": {
-          schema: {
-            type: "object",
-            properties: {
-              token_type: { type: "string", example: "Bearer" },
-              access_token: { type: "string" },
-              consumer_id: { type: "string", format: "uuid" },
-              key_id: { type: "string", format: "uuid" },
-              prefix: { type: "string" },
-              scopes: { type: "array", items: { type: "string" } },
-              issued_at: { type: "string", format: "date-time" },
-            },
-          },
+          schema: envelopeSchema(tokenDataSchema),
         },
       },
     },
   };
 
   return {
-    "/auth/register": {
+    "/api/v1/auth/register": {
       servers,
       post: {
         tags: ["Gateway Auth"],
         summary: "Register",
         description:
-          "Create an account with email and password and receive a gateway API key. When ALLOW_PUBLIC_REGISTRATION is false, requires X-Admin-Token.",
+          "Create an account with email and password and receive a gateway API key with starter credits.",
+        security: [],
         requestBody: {
           required: true,
           content: {
@@ -58,7 +69,6 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
                   name: { type: "string" },
                   email: { type: "string", format: "email" },
                   password: { type: "string", minLength: 8 },
-                  scopes: { type: "array", items: { type: "string" } },
                 },
               },
             },
@@ -66,19 +76,19 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
         },
         responses: {
           ...tokenResponse,
-          "400": { description: "Validation error" },
-          "403": { description: "Public registration disabled and no admin token" },
-          "409": { description: "Email already registered" },
+          "400": { description: "Validation error (enveloped response)" },
+          "409": { description: "Email already registered (enveloped response)" },
         },
       },
     },
-    "/auth/login": {
+    "/api/v1/auth/login": {
       servers,
       post: {
         tags: ["Gateway Auth"],
         summary: "Login",
         description:
           "Verify email and password and issue a new gateway API key (optionally revoking other keys).",
+        security: [],
         requestBody: {
           required: true,
           content: {
@@ -96,12 +106,12 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
         },
         responses: {
           ...tokenResponse,
-          "400": { description: "Validation error" },
-          "401": { description: "Invalid credentials" },
+          "400": { description: "Validation error (enveloped response)" },
+          "401": { description: "Invalid credentials (enveloped response)" },
         },
       },
     },
-    "/auth/token": {
+    "/api/v1/auth/token": {
       servers,
       post: {
         tags: ["Gateway Auth"],
@@ -125,12 +135,12 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
         },
         responses: {
           ...tokenResponse,
-          "400": { description: "Validation error" },
-          "401": { description: "Invalid admin token" },
+          "400": { description: "Validation error (enveloped response)" },
+          "401": { description: "Invalid admin token (enveloped response)" },
         },
       },
     },
-    "/auth/api-keys": {
+    "/api/v1/auth/api-keys": {
       servers,
       post: {
         tags: ["Gateway Auth"],
@@ -153,8 +163,8 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
         },
         responses: {
           ...tokenResponse,
-          "400": { description: "Validation error" },
-          "401": { description: "Invalid admin token" },
+          "400": { description: "Validation error (enveloped response)" },
+          "401": { description: "Invalid admin token (enveloped response)" },
         },
       },
     },
@@ -163,7 +173,7 @@ function gatewayAuthPaths(origin: string): Record<string, unknown> {
 
 /** Merge upstream Magicroll OpenAPI with gateway auth and correct server URL for Try it out. */
 export function buildGatewayOpenApiSpec(c: Context, env: Env): Record<string, unknown> {
-  const raw = readFileSync(join(import.meta.dir, "../../../api-1.json"), "utf-8");
+  const raw = readFileSync(join(import.meta.dir, "../../../api-2.json"), "utf-8");
   const spec = JSON.parse(raw) as Record<string, unknown>;
   if (spec.openapi == null || String(spec.openapi).trim() === "") {
     spec.openapi = "3.0.3";
@@ -174,7 +184,7 @@ export function buildGatewayOpenApiSpec(c: Context, env: Env): Record<string, un
 
   const info = spec.info as Record<string, unknown>;
   const gatewayNote =
-    "\n\n---\n\n## Gateway\n\nUse **this gateway host** for all requests. Send your **gateway-issued** API key (`gw_live_...`) as `Authorization: Bearer`. Get a key via `POST /auth/register`, `POST /auth/login`, or admin `POST /auth/token`. The Magicroll enterprise token is configured only on the server.";
+    "\n\n---\n\n## Gateway\n\nUse **this gateway host** for all requests. Send your signed JWT as `Authorization: Bearer`. Get a token via `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, or admin `POST /api/v1/auth/token`. All gateway responses use `{status,message,data}`.";
   info.description = `${String(info.description ?? "")}${gatewayNote}`;
 
   const paths = { ...((spec.paths as Record<string, unknown>) ?? {}) };
@@ -187,8 +197,8 @@ export function buildGatewayOpenApiSpec(c: Context, env: Env): Record<string, un
     BearerAuth: {
       type: "http",
       scheme: "bearer",
-      bearerFormat: "Gateway API Key",
-      description: "Gateway-issued key (gw_live_...). Not the upstream Magicroll token.",
+      bearerFormat: "JWT",
+      description: "Gateway-issued JWT access token. Not the upstream Magicroll token.",
     },
     AdminBootstrap: {
       type: "apiKey",

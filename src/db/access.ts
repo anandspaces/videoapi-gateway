@@ -29,6 +29,8 @@ export type ConsumerRow = {
   passwordHash: string | null;
 };
 
+const REGISTER_STARTING_CREDITS = 10;
+
 function parseScopesJson(raw: string): string[] {
   try {
     const v = JSON.parse(raw) as unknown;
@@ -130,7 +132,7 @@ export function createDbAccess(databaseUrl: string, pepper: string): DbAccess {
           name: input.name,
           email: input.email,
           passwordHash: input.passwordHash,
-          metadata: null,
+          metadata: JSON.stringify({ credits: REGISTER_STARTING_CREDITS }),
         });
         await db.insert(apiKeys).values({
           id: keyId,
@@ -271,7 +273,7 @@ export function createDbAccess(databaseUrl: string, pepper: string): DbAccess {
         name: input.name,
         email: input.email,
         passwordHash: input.passwordHash,
-        metadata: null,
+        metadata: JSON.stringify({ credits: REGISTER_STARTING_CREDITS }),
       });
       await db.insert(apiKeys).values({
         id: keyId,

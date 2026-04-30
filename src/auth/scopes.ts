@@ -12,15 +12,14 @@ const routeRules: { prefix: string; scope: string }[] = [
   { prefix: "/enterprise/stats/", scope: "enterprise:stats" },
   { prefix: "/enterprise/users/create/", scope: "enterprise:users:write" },
   { prefix: "/enterprise/users/", scope: "enterprise:users:read" },
-  { prefix: "/project/video-to-video/", scope: "project:video-to-video" },
-  { prefix: "/project/text-to-video/", scope: "project:text-to-video" },
-  { prefix: "/project/avatar/", scope: "project:avatar" },
+  { prefix: "/text-to-video/voices/clone/", scope: "ttv:voices:clone" },
   { prefix: "/text-to-video/voices/", scope: "ttv:voices" },
   { prefix: "/text-to-video/voiceover/", scope: "ttv:voiceover" },
 ];
 
 /** Dynamic: /project/{uuid}/ */
 const projectDetailRe = /^\/project\/[0-9a-fA-F-]{36}\/?$/;
+const projectProgressRe = /^\/project\/[0-9a-fA-F-]{36}\/progress\/?$/;
 
 /** Path after `/api/v1`, e.g. `/enterprise/balance/`. */
 export function pathUnderApiV1(fullPathname: string): string | null {
@@ -37,14 +36,18 @@ export function pathUnderApiV1(fullPathname: string): string | null {
  */
 export function requiredScopeForPath(restPath: string): string | null {
   const p = withTrailingSlash(restPath);
+  if (p === "/project/") {
+    return "project:create";
+  }
+  if (projectProgressRe.test(p)) {
+    return "project:progress:read";
+  }
+  if (projectDetailRe.test(p)) {
+    return "project:detail";
+  }
 
   for (const { prefix, scope } of routeRules) {
     if (p.startsWith(prefix)) return scope;
-  }
-
-  const noTrail = p.endsWith("/") && p.length > 1 ? p.slice(0, -1) : p;
-  if (projectDetailRe.test(noTrail)) {
-    return "project:detail";
   }
 
   return null;

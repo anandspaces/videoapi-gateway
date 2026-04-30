@@ -1,4 +1,5 @@
 import type { Context, Next } from "hono";
+import { envelope } from "../http/response.ts";
 
 type Bucket = { windowId: number; count: number };
 
@@ -27,7 +28,7 @@ export function createRateLimitMiddleware() {
     }
     b.count += 1;
     if (b.count > limit) {
-      return c.json({ error: "rate_limit_exceeded", message: "Too many requests" }, 429);
+      return c.json(envelope(429, "Too many requests", { error: "rate_limit_exceeded" }), 429);
     }
     await next();
   };

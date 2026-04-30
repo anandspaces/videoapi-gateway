@@ -1,5 +1,6 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { Hono } from "hono";
+import { logInfo } from "../logging/logger.ts";
 import { buildGatewayOpenApiSpec } from "../openapi/buildGatewaySpec.ts";
 
 export function docsRoutes(): Hono {
@@ -7,13 +8,14 @@ export function docsRoutes(): Hono {
 
   r.get("/openapi.json", (c) => {
     const env = c.get("env");
+    logInfo("docs.openapi.serve", { requestId: c.get("requestId") });
     return c.json(buildGatewayOpenApiSpec(c, env));
   });
 
   r.get(
     "/docs",
     swaggerUI({
-      url: "/openapi.json",
+      url: "/api/v1/openapi.json",
       persistAuthorization: true,
       tryItOutEnabled: true,
     }),

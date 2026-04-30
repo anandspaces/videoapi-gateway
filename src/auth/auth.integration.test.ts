@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "fs";
 import type { Hono } from "hono";
 import { tmpdir } from "os";
@@ -14,6 +15,8 @@ describe("auth register and login", () => {
     process.env.DATABASE_URL = `file:${join(tmpDir, "db.sqlite")}`;
     process.env.API_KEY_PEPPER = "12345678901234567890123456789012";
     process.env.ADMIN_BOOTSTRAP_TOKEN = "admin-bootstrap-token-32chars-min";
+    process.env.JWT_SECRET = "12345678901234567890123456789012";
+    process.env.JWT_EXPIRES_IN_HOURS = "2";
     process.env.UPSTREAM_BEARER_TOKEN = "x";
     process.env.ALLOW_PUBLIC_REGISTRATION = "true";
     process.env.AUTH_REVOKE_KEYS_ON_LOGIN = "false";
@@ -43,7 +46,7 @@ describe("auth register and login", () => {
 
   it("register then login returns bearer-capable tokens", async () => {
     const reg = await app.fetch(
-      new Request("http://127.0.0.1/auth/register", {
+      new Request("http://127.0.0.1/api/v1/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -54,11 +57,22 @@ describe("auth register and login", () => {
       }),
     );
     expect(reg.status).toBe(201);
-    const regJson = (await reg.json()) as { access_token: string };
-    expect(regJson.access_token).toMatch(/^gw_live_/);
+    const regJson = (await reg.json()) as {
+      status: number;
+      data: { access_token: string };
+    };
+    expect(regJson.status).toBe(1);
+    expect(regJson.data.access_token.split(".")).toHaveLength(3);
+
+    const db = new Database(join(tmpDir, "db.sqlite"));
+    const consumerRow = db
+      .query("select metadata from consumers where email = ? limit 1")
+      .get("alice@example.com") as { metadata: string | null } | null;
+    db.close();
+    expect(consumerRow?.metadata).toBe(JSON.stringify({ credits: 10 }));
 
     const login = await app.fetch(
-      new Request("http://127.0.0.1/auth/login", {
+      new Request("http://127.0.0.1/api/v1/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -68,19 +82,37 @@ describe("auth register and login", () => {
       }),
     );
     expect(login.status).toBe(201);
-    const loginJson = (await login.json()) as { access_token: string };
-    expect(loginJson.access_token).toMatch(/^gw_live_/);
-    expect(loginJson.access_token).not.toBe(regJson.access_token);
+    const loginJson = (await login.json()) as {
+      status: number;
+      data: { access_token: string };
+    };
+    expect(loginJson.status).toBe(1);
+    expect(loginJson.data.access_token.split(".")).toHaveLength(3);
+    expect(loginJson.data.access_token).not.toBe(regJson.data.access_token);
 
     const proxied = await app.fetch(
-      new Request("http://127.0.0.1/api/v1/enterprise/balance/", {
-        headers: { Authorization: `Bearer ${loginJson.access_token}` },
+      new Request("http://127.0.0.1/api/v1/project/", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${loginJson.data.access_token}` },
       }),
     );
     expect(proxied.status).toBe(200);
+    const proxiedJson = (await proxied.json()) as { status: number; data: { upstream: { ok: boolean } } };
+    expect(proxiedJson.status).toBe(1);
+    expect(proxiedJson.data.upstream.ok).toBe(true);
+
+    const deniedUnknown = await app.fetch(
+      new Request("http://127.0.0.1/api/v1/unknown/", {
+        headers: { Authorization: `Bearer ${loginJson.data.access_token}` },
+      }),
+    );
+    expect(deniedUnknown.status).toBe(403);
+    const deniedJson = (await deniedUnknown.json()) as { status: number; data: { error: string } };
+    expect(deniedJson.status).toBe(0);
+    expect(deniedJson.data.error).toBe("forbidden");
   });
 
-  it("returns 403 when public registration disabled and no admin header", async () => {
+  it("keeps registration open even when ALLOW_PUBLIC_REGISTRATION is false", async () => {
     process.env.ALLOW_PUBLIC_REGISTRATION = "false";
     const { loadEnv } = await import("../env.ts");
     const { createDbAccess } = await import("../db/access.ts");
@@ -91,7 +123,7 @@ describe("auth register and login", () => {
     const gated = buildGatewayApp({ env, dbAccess });
 
     const res = await gated.fetch(
-      new Request("http://127.0.0.1/auth/register", {
+      new Request("http://127.0.0.1/api/v1/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -101,7 +133,7 @@ describe("auth register and login", () => {
         }),
       }),
     );
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(201);
     process.env.ALLOW_PUBLIC_REGISTRATION = "true";
   });
 });

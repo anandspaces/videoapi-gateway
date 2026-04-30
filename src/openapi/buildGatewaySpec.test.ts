@@ -26,10 +26,30 @@ describe("buildGatewayOpenApiSpec", () => {
       },
     ]);
     const paths = spec.paths as Record<string, unknown>;
-    expect(paths["/auth/register"]).toBeDefined();
-    expect(paths["/auth/login"]).toBeDefined();
-    expect(paths["/auth/token"]).toBeDefined();
+    expect(paths["/api/v1/auth/register"]).toBeDefined();
+    expect(paths["/api/v1/auth/login"]).toBeDefined();
+    expect(paths["/api/v1/auth/token"]).toBeDefined();
     expect(paths["/enterprise/balance/"]).toBeDefined();
+    expect(paths["/project/"]).toBeDefined();
+    expect(paths["/project/{project_id}/progress/"]).toBeDefined();
+    expect(paths["/text-to-video/voices/clone/"]).toBeDefined();
+
+    const registerPath = paths["/api/v1/auth/register"] as { post?: { security?: unknown[] } };
+    const loginPath = paths["/api/v1/auth/login"] as { post?: { security?: unknown[] } };
+    expect(registerPath.post?.security).toEqual([]);
+    expect(loginPath.post?.security).toEqual([]);
+    const registerResponseSchema = (registerPath.post as { responses?: Record<string, unknown> }).responses?.[
+      "201"
+    ] as { content?: { "application/json"?: { schema?: Record<string, unknown> } } };
+    expect(registerResponseSchema.content?.["application/json"]?.schema?.properties).toHaveProperty(
+      "status",
+    );
+    expect(registerResponseSchema.content?.["application/json"]?.schema?.properties).toHaveProperty(
+      "message",
+    );
+    expect(registerResponseSchema.content?.["application/json"]?.schema?.properties).toHaveProperty(
+      "data",
+    );
   });
 
   it("infers origin from Host when GATEWAY_PUBLIC_URL unset", () => {

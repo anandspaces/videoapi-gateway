@@ -6,5 +6,6 @@ declare module "hono" {
     env: Env;
     dbAccess: DbAccess;
     apiKey: ApiKeyRow;
+    requestId: string;
   }
 }

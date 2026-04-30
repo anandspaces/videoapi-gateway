@@ -20,10 +20,20 @@ describe("requiredScopeForPath", () => {
     expect(requiredScopeForPath("/enterprise/users/")).toBe("enterprise:users:read");
   });
 
-  it("maps project detail uuid", () => {
+  it("maps api-2 project routes", () => {
+    expect(requiredScopeForPath("/project/")).toBe("project:create");
     expect(requiredScopeForPath("/project/550e8400-e29b-41d4-a716-446655440000/")).toBe(
       "project:detail",
     );
+    expect(requiredScopeForPath("/project/550e8400-e29b-41d4-a716-446655440000/progress/")).toBe(
+      "project:progress:read",
+    );
+  });
+
+  it("maps text-to-video routes", () => {
+    expect(requiredScopeForPath("/text-to-video/voices/")).toBe("ttv:voices");
+    expect(requiredScopeForPath("/text-to-video/voices/clone/")).toBe("ttv:voices:clone");
+    expect(requiredScopeForPath("/text-to-video/voiceover/")).toBe("ttv:voiceover");
   });
 
   it("denies unknown paths", () => {

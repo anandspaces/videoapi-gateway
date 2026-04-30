@@ -9,6 +9,11 @@ const envSchema = z.object({
   UPSTREAM_BASE_URL: z.string().url().default("https://api.magicroll.ai/api/v1"),
   UPSTREAM_BEARER_TOKEN: z.string().min(1),
   ADMIN_BOOTSTRAP_TOKEN: z.string().min(16),
+  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 chars"),
+  JWT_EXPIRES_IN_HOURS: z.coerce
+    .number()
+    .int("JWT_EXPIRES_IN_HOURS must be an integer")
+    .positive("JWT_EXPIRES_IN_HOURS must be positive"),
   UPSTREAM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   PORT: z.coerce.number().int().positive().default(3000),
   CORS_ORIGINS: z
