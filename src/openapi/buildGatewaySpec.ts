@@ -297,7 +297,7 @@ function adminPaths(origin: string): Record<string, unknown> {
 
 function proxyPaths(origin: string): Record<string, unknown> {
   const servers = [{ url: origin, description: "Gateway" }];
-  const proxyOperation = {
+  const proxyOperationBase = {
     tags: ["Proxy"],
     summary: "Proxy request to upstream via gateway",
     description:
@@ -319,16 +319,76 @@ function proxyPaths(origin: string): Record<string, unknown> {
       "502": { description: "Bad gateway / upstream timeout or failure" },
     },
   };
+  const writeRequestBody = {
+    required: false,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          additionalProperties: true,
+          description: "Arbitrary JSON payload forwarded upstream.",
+        },
+        examples: {
+          generic: {
+            summary: "Generic JSON",
+            value: { prompt: "Generate a short demo video", duration: 6 },
+          },
+        },
+      },
+      "application/x-www-form-urlencoded": {
+        schema: {
+          type: "object",
+          additionalProperties: { type: "string" },
+        },
+      },
+      "multipart/form-data": {
+        schema: {
+          type: "object",
+          additionalProperties: true,
+          description: "Form-data body (including file uploads) proxied as-is.",
+        },
+      },
+      "text/plain": {
+        schema: { type: "string" },
+      },
+    },
+  };
   return {
     "/api/v1/{proxyPath}": {
       servers,
-      get: proxyOperation,
-      post: proxyOperation,
-      put: proxyOperation,
-      patch: proxyOperation,
-      delete: proxyOperation,
-      head: proxyOperation,
-      options: proxyOperation,
+      get: {
+        ...proxyOperationBase,
+        description:
+          "Proxy GET request to upstream. Use query params and path variables inside `proxyPath`.",
+      },
+      post: {
+        ...proxyOperationBase,
+        description: "Proxy POST request to upstream with body forwarded as-is.",
+        requestBody: writeRequestBody,
+      },
+      put: {
+        ...proxyOperationBase,
+        description: "Proxy PUT request to upstream with body forwarded as-is.",
+        requestBody: writeRequestBody,
+      },
+      patch: {
+        ...proxyOperationBase,
+        description: "Proxy PATCH request to upstream with body forwarded as-is.",
+        requestBody: writeRequestBody,
+      },
+      delete: {
+        ...proxyOperationBase,
+        description: "Proxy DELETE request to upstream. Optional body is forwarded as-is.",
+        requestBody: writeRequestBody,
+      },
+      head: {
+        ...proxyOperationBase,
+        description: "Proxy HEAD request to upstream.",
+      },
+      options: {
+        ...proxyOperationBase,
+        description: "Proxy OPTIONS request to upstream.",
+      },
     },
   };
 }

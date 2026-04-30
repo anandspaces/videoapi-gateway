@@ -33,6 +33,13 @@ describe("buildGatewayOpenApiSpec", () => {
     expect(paths["/api/v1/internal/admin/consumers"]).toBeDefined();
     expect(paths["/api/v1/internal/admin/api-keys"]).toBeDefined();
     expect(paths["/api/v1/{proxyPath}"]).toBeDefined();
+    const proxyPath = paths["/api/v1/{proxyPath}"] as {
+      post?: { requestBody?: { content?: Record<string, unknown> } };
+      get?: { requestBody?: unknown };
+    };
+    expect(proxyPath.post?.requestBody?.content).toHaveProperty("application/json");
+    expect(proxyPath.post?.requestBody?.content).toHaveProperty("multipart/form-data");
+    expect(proxyPath.get?.requestBody).toBeUndefined();
 
     const registerPath = paths["/api/v1/auth/register"] as { post?: { security?: unknown[] } };
     const loginPath = paths["/api/v1/auth/login"] as { post?: { security?: unknown[] } };
