@@ -92,6 +92,32 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
     let pq = pathname.replace(/^\/api\/v1/, "") || "/";
     if (!pq.startsWith("/")) pq = `/${pq}`;
     const pathAndQuery = `${pq}${url.search}`;
+    const method = c.req.method;
+
+    const isVideoGenProjectCreate = method === "POST" && (pq === "/project/" || pq === "/project");
+
+    if (isVideoGenProjectCreate) {
+      const identity = c.get("apiKey");
+      const debit = await dbAccess.tryDeductCreditsForVideoGenRequest(
+        identity.consumerId,
+        env.PROJECT_CREATE_CREDIT_COST,
+      );
+      if (!debit.ok) {
+        logWarn("credits.insufficient_project", {
+          requestId,
+          consumerId: identity.consumerId,
+          balance: debit.balance,
+        });
+        return c.json(
+          envelope(402, "Insufficient credits", {
+            error: "insufficient_credits",
+            balance: debit.balance,
+            required: env.PROJECT_CREATE_CREDIT_COST,
+          }),
+          402,
+        );
+      }
+    }
 
     const target = joinUpstreamUrl(env.UPSTREAM_BASE_URL, pathAndQuery);
     logInfo("proxy.forward.start", {
@@ -103,7 +129,6 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
 
     const headers = buildUpstreamHeaders(c.req.raw.headers, env.UPSTREAM_BEARER_TOKEN);
 
-    const method = c.req.method;
     const body = method === "GET" || method === "HEAD" ? undefined : (c.req.raw.body ?? undefined);
 
     let upstream: Response;

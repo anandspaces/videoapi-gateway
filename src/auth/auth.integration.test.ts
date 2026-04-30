@@ -39,13 +39,14 @@ describe("auth register and login", () => {
   });
 
   it("register then login returns bearer-capable tokens", async () => {
+    const email = `alice-${crypto.randomUUID()}@example.com`;
     const reg = await app.fetch(
       new Request("http://127.0.0.1/api/v1/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: "Alice",
-          email: "alice@example.com",
+          email,
           password: "password123",
         }),
       }),
@@ -61,19 +62,18 @@ describe("auth register and login", () => {
     const sql = postgres(
       process.env.DATABASE_URL ?? "postgresql://postgres:root@localhost:5432/dt_videoapi_db",
     );
-    const consumerRows = await sql<{ metadata: string | null }[]>`
-      select metadata from consumers where email = ${"alice@example.com"} limit 1
+    const consumerRows = await sql<{ metadata: { credits?: number } | null }[]>`
+      select metadata from consumers where email = ${email} limit 1
     `;
-    await sql.end();
     const consumerRow = consumerRows[0] ?? null;
-    expect(consumerRow?.metadata).toBe(JSON.stringify({ credits: 10 }));
+    expect(consumerRow?.metadata).toEqual({ credits: 100 });
 
     const login = await app.fetch(
       new Request("http://127.0.0.1/api/v1/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          email: "alice@example.com",
+          email,
           password: "password123",
         }),
       }),
@@ -101,6 +101,12 @@ describe("auth register and login", () => {
     expect(proxiedJson.status).toBe(1);
     expect(proxiedJson.data.upstream.ok).toBe(true);
 
+    const afterProjectRows = await sql<{ metadata: { credits?: number } | null }[]>`
+      select metadata from consumers where email = ${email} limit 1
+    `;
+    await sql.end();
+    expect(afterProjectRows[0]?.metadata).toEqual({ credits: 99 });
+
     const deniedUnknown = await app.fetch(
       new Request("http://127.0.0.1/api/v1/unknown/", {
         headers: { Authorization: `Bearer ${loginJson.data.access_token}` },
@@ -122,13 +128,14 @@ describe("auth register and login", () => {
     const dbAccess = createDbAccess(env.DATABASE_URL, env.API_KEY_PEPPER);
     const gated = buildGatewayApp({ env, dbAccess });
 
+    const bobEmail = `bob-${crypto.randomUUID()}@example.com`;
     const res = await gated.fetch(
       new Request("http://127.0.0.1/api/v1/auth/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: "Bob",
-          email: "bob@example.com",
+          email: bobEmail,
           password: "password123",
         }),
       }),

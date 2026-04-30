@@ -18,6 +18,7 @@ Bun + TypeScript reverse proxy: consumers authenticate with **gateway-issued JWT
 | `UPSTREAM_TIMEOUT_MS` | Optional. Default `120000`. |
 | `PORT` | Optional. Default `3000`. |
 | `CORS_ORIGINS` | Optional comma-separated list of allowed browser origins. |
+| `PROJECT_CREATE_CREDIT_COST` | Credits deducted on each `POST /api/v1/project/` (video create). Default `1`. |
 
 ## Commands
 
@@ -44,7 +45,7 @@ Use **Authorize** with `BearerAuth` and paste your JWT access token.
 
 - **`POST /api/v1/auth/register`** — body `{ "name", "email", "password" (min 8 chars) }`. Returns a JWT bearer token in the common envelope `{ "status", "message", "data" }`.
   - This route is open (no admin token required).
-  - New users are automatically initialized with `10` starter credits in user metadata.
+  - New users are automatically initialized with `100` starter credits in user metadata.
 - **`POST /api/v1/auth/login`** — body `{ "email", "password" }`. Issues a **new** JWT token (optionally revokes others if `AUTH_REVOKE_KEYS_ON_LOGIN=true`).
 
 ### Bootstrap (admin only)

@@ -81,6 +81,7 @@ const EVENT_MESSAGES: Record<string, string> = {
   "admin.api_keys.create.success": "Admin created API key successfully",
   "admin.api_keys.create.invalid_json": "Create-api-key payload is not valid JSON",
   "admin.api_keys.create.validation_failed": "Create-api-key request validation failed",
+  "credits.insufficient_project": "Insufficient credits for POST /project/ request",
   "proxy.forward.start": "Forwarding request to upstream API",
   "proxy.forward.success": "Upstream API responded",
   "proxy.forward.failed": "Upstream API request failed",
