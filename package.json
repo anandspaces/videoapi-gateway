@@ -11,6 +11,8 @@
     "test": "bun test tests/unit && bun test tests/integration",
     "test:unit": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
+    "test:watch": "bun test --watch tests/unit",
+    "test:coverage": "bun test --coverage tests/unit tests/integration",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write ."
