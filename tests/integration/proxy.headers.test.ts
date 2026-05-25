@@ -15,7 +15,9 @@ describe("proxy header behaviour", () => {
   beforeAll(async () => {
     ({ app, upstream } = await setupGateway((req) => {
       const captured: Record<string, string> = {};
-      req.headers.forEach((value, key) => { captured[key] = value; });
+      req.headers.forEach((value, key) => {
+        captured[key] = value;
+      });
       lastUpstreamReq = {
         auth: req.headers.get("authorization"),
         headers: captured,
@@ -72,7 +74,7 @@ describe("proxy header behaviour", () => {
     // own `Connection: keep-alive` on the outgoing request as a transport
     // concern, independent of what the gateway passes through.)
     expect(lastUpstreamReq?.headers["transfer-encoding"]).toBeUndefined();
-    expect(lastUpstreamReq?.headers["te"]).toBeUndefined();
+    expect(lastUpstreamReq?.headers.te).toBeUndefined();
     expect(lastUpstreamReq?.headers["keep-alive"]).toBeUndefined();
   });
 

@@ -11,6 +11,9 @@ const BASE_ENV = {
   UPSTREAM_BEARER_TOKEN: "upstream-secret",
   ALLOW_PUBLIC_REGISTRATION: "true",
   AUTH_REVOKE_KEYS_ON_LOGIN: "false",
+  // Cheapest bcrypt cost: registration hashes a password on every test, and at
+  // the production cost of 10 that dominates runtime (and times out on slow CI/VMs).
+  BCRYPT_COST: "4",
 };
 
 export type SetupResult = {

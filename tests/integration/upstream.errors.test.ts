@@ -96,11 +96,12 @@ describe("upstream returns non-JSON — wraps raw text in envelope", () => {
   let upstream: ReturnType<typeof Bun.serve>;
 
   beforeAll(async () => {
-    ({ app, upstream } = await setupGateway(() =>
-      new Response("plain text response", {
-        status: 200,
-        headers: { "content-type": "text/plain" },
-      }),
+    ({ app, upstream } = await setupGateway(
+      () =>
+        new Response("plain text response", {
+          status: 200,
+          headers: { "content-type": "text/plain" },
+        }),
     ));
   });
 

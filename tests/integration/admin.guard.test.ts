@@ -94,7 +94,10 @@ describe("admin route guards", () => {
           "x-admin-token": ADMIN_TOKEN,
           "content-type": "application/json",
         },
-        body: JSON.stringify({ name: "Scoped Org", scopes: ["project:create", "enterprise:balance"] }),
+        body: JSON.stringify({
+          name: "Scoped Org",
+          scopes: ["project:create", "enterprise:balance"],
+        }),
       }),
     );
     expect(res.status).toBe(201);
@@ -143,7 +146,9 @@ describe("admin route guards", () => {
         body: JSON.stringify({ name: "Multi-Key Org" }),
       }),
     );
-    const { data: { consumerId } } = (await consumerRes.json()) as {
+    const {
+      data: { consumerId },
+    } = (await consumerRes.json()) as {
       data: { consumerId: string };
     };
 

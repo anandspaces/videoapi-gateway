@@ -91,7 +91,7 @@ export function authRoutes(): Hono {
       return c.json(envelope(409, "Email already registered", { error: "conflict" }), 409);
     }
 
-    const passwordHash = await hashPassword(parsed.data.password);
+    const passwordHash = await hashPassword(parsed.data.password, env.BCRYPT_COST);
     try {
       const result = await db.registerConsumerWithPassword({
         name: parsed.data.name,

@@ -15,10 +15,7 @@ await applyMigrations(env.DATABASE_URL);
 
 logInfo("gateway.migrations.applied");
 
-const dbAccess = createDbAccess(
-  env.DATABASE_URL,
-  env.API_KEY_PEPPER
-);
+const dbAccess = createDbAccess(env.DATABASE_URL, env.API_KEY_PEPPER);
 
 const app = buildGatewayApp({ env, dbAccess });
 

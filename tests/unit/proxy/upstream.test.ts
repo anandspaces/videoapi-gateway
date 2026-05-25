@@ -81,7 +81,9 @@ describe("filterResponseHeaders", () => {
   });
 
   it("returns empty Headers when response has only hop-by-hop headers", () => {
-    const res = new Response(null, { headers: { connection: "close", "transfer-encoding": "chunked" } });
+    const res = new Response(null, {
+      headers: { connection: "close", "transfer-encoding": "chunked" },
+    });
     const filtered = filterResponseHeaders(res);
     expect(filtered.get("connection")).toBeNull();
     expect(filtered.get("transfer-encoding")).toBeNull();

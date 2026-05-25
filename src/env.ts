@@ -38,6 +38,14 @@ const envSchema = z.object({
     .optional()
     .transform((v) => v === "true" || v === "1"),
   PROJECT_CREATE_CREDIT_COST: z.coerce.number().int().positive().default(1),
+  // bcrypt work factor for hashing consumer passwords. Keep >=10 in production;
+  // tests lower it so registration (a bcrypt hash) doesn't dominate runtime.
+  BCRYPT_COST: z.coerce
+    .number()
+    .int()
+    .min(4, "BCRYPT_COST must be at least 4")
+    .max(15, "BCRYPT_COST must be at most 15")
+    .default(10),
 });
 
 export type Env = z.infer<typeof envSchema>;

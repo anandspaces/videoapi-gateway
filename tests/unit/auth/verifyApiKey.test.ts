@@ -7,11 +7,10 @@ const JWT_SECRET = "12345678901234567890123456789012satisfiesminlength";
 
 type StubEnv = { JWT_SECRET: string };
 
-function makeContext(opts: {
-  authHeader?: string | null;
-  url?: string;
-  env?: StubEnv;
-}): { ctx: Context; store: Map<string, unknown> } {
+function makeContext(opts: { authHeader?: string | null; url?: string; env?: StubEnv }): {
+  ctx: Context;
+  store: Map<string, unknown>;
+} {
   const store = new Map<string, unknown>();
   store.set("requestId", "test-request-id");
   store.set("env", opts.env ?? { JWT_SECRET });
@@ -137,7 +136,9 @@ describe("createAuthMiddleware — scope enforcement", () => {
       authHeader: `Bearer ${token}`,
       url: "http://localhost/api/v1/enterprise/balance/",
     });
-    const res = await mw(ctx, async () => { called = true; });
+    const res = await mw(ctx, async () => {
+      called = true;
+    });
     expect(called).toBe(true);
     expect(res).toBeUndefined();
   });
@@ -150,7 +151,9 @@ describe("createAuthMiddleware — scope enforcement", () => {
       authHeader: `Bearer ${token}`,
       url: "http://localhost/api/v1/project/",
     });
-    const res = await mw(ctx, async () => { called = true; });
+    const res = await mw(ctx, async () => {
+      called = true;
+    });
     expect(called).toBe(true);
     expect(res).toBeUndefined();
   });
@@ -187,7 +190,9 @@ describe("createAuthMiddleware — context population on success", () => {
       url: "http://localhost/api/v1/enterprise/balance/",
     });
     let callCount = 0;
-    await mw(ctx, async () => { callCount++; });
+    await mw(ctx, async () => {
+      callCount++;
+    });
     expect(callCount).toBe(1);
   });
 });
@@ -201,7 +206,9 @@ describe("createAuthMiddleware — path normalization", () => {
       authHeader: `Bearer ${token}`,
       url: "http://localhost/enterprise/balance/",
     });
-    await mw(ctx, async () => { called = true; });
+    await mw(ctx, async () => {
+      called = true;
+    });
     expect(called).toBe(true);
   });
 
@@ -214,7 +221,9 @@ describe("createAuthMiddleware — path normalization", () => {
       authHeader: `Bearer ${token}`,
       url: `http://localhost/api/v1/project/${projectId}/`,
     });
-    await mw(ctx, async () => { called = true; });
+    await mw(ctx, async () => {
+      called = true;
+    });
     expect(called).toBe(true);
   });
 
@@ -227,7 +236,9 @@ describe("createAuthMiddleware — path normalization", () => {
       authHeader: `Bearer ${token}`,
       url: `http://localhost/api/v1/project/${projectId}/progress`,
     });
-    await mw(ctx, async () => { called = true; });
+    await mw(ctx, async () => {
+      called = true;
+    });
     expect(called).toBe(true);
   });
 });

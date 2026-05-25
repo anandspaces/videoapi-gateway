@@ -133,9 +133,7 @@ describe("auth error cases", () => {
   // ── Proxy auth ───────────────────────────────────────────────────────────
 
   it("proxy: 401 when Authorization header is absent", async () => {
-    const res = await app.fetch(
-      new Request("http://localhost/api/v1/project/"),
-    );
+    const res = await app.fetch(new Request("http://localhost/api/v1/project/"));
     expect(res.status).toBe(401);
     const body = (await res.json()) as { data: { error: string } };
     expect(body.data.error).toBe("unauthorized");
