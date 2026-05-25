@@ -1,5 +1,5 @@
 import { defineConfig } from "drizzle-kit";
-import { requireDatabaseUrlFromEnv } from "./src/db/databaseUrl.ts";
+import { requireDatabaseUrlFromEnv } from "./db/databaseUrl.ts";
 
 export default defineConfig({
   schema: "./src/db/schema.pg.ts",
