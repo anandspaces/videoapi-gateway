@@ -10,13 +10,17 @@ describe("upstream unreachable — returns 502", () => {
   let upstream: ReturnType<typeof Bun.serve>;
 
   beforeAll(async () => {
-    // Upstream handler throws synchronously → gateway catches and returns 502
-    ({ app, upstream } = await setupGateway(() => {
-      throw new Error("simulated connection refused");
-    }));
+    // Stand the upstream up so setupGateway can wire UPSTREAM_BASE_URL to its
+    // port, then shut it down so the port refuses connections. This makes the
+    // gateway's fetch reject at the transport layer — the real "upstream
+    // unreachable" path. (Throwing inside the mock handler does NOT work:
+    // Bun.serve turns a thrown handler into a genuine HTTP 500, which the
+    // gateway correctly passes through as 500, not 502.)
+    ({ app, upstream } = await setupGateway(() => Response.json({ ok: true })));
+    upstream.stop(true);
   });
 
-  afterAll(() => upstream?.stop());
+  afterAll(() => upstream?.stop(true));
 
   it("returns 502 with bad_gateway error when upstream throws", async () => {
     const { token } = await registerUser(app);
@@ -57,9 +61,14 @@ describe("upstream timeout — returns 502 with timeout message", () => {
   let upstream: ReturnType<typeof Bun.serve>;
 
   beforeAll(async () => {
-    // Upstream never responds; gateway is given a very short timeout
+    // Upstream never responds on its own, so the gateway's short timeout fires.
+    // It does release the connection when the client (gateway) aborts, which
+    // lets afterAll's stop() complete instead of hanging on the in-flight request.
     ({ app, upstream } = await setupGateway(
-      () => new Promise<Response>(() => {}),
+      (req) =>
+        new Promise<Response>((_resolve, reject) => {
+          req.signal.addEventListener("abort", () => reject(new Error("client aborted")));
+        }),
       { UPSTREAM_TIMEOUT_MS: "80" },
     ));
   });

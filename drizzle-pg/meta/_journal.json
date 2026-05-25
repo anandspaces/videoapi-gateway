@@ -22,6 +22,13 @@
       "when": 1779718233754,
       "tag": "0002_outstanding_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779726129480,
+      "tag": "0003_violet_human_torch",
+      "breakpoints": true
     }
   ]
 }

@@ -551,9 +551,13 @@ export const apiRequestLogs = pgTable(
     // Correlation id shared with the structured application logs for one request.
     requestId: text("request_id").notNull(),
 
-    // Caller identity (nullable: deletes set null, and unauthenticated paths leave them empty).
-    consumerId: text("consumer_id").references(() => consumers.id, { onDelete: "set null" }),
-    apiKeyId: text("api_key_id").references(() => apiKeys.id, { onDelete: "set null" }),
+    // Caller identity (nullable: unauthenticated paths leave them empty).
+    // Intentionally NOT foreign keys: this is an append-only audit log that must
+    // record history independent of entity lifecycle. A hard FK would also make
+    // the fire-and-forget insert fail when the key/consumer is deleted in the
+    // window between request authorization and the async log write.
+    consumerId: text("consumer_id"),
+    apiKeyId: text("api_key_id"),
 
     // What got hit.
     method: text("method").notNull(),

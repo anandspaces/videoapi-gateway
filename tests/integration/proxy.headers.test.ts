@@ -60,14 +60,20 @@ describe("proxy header behaviour", () => {
       new Request(PROBE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
-          Connection: "keep-alive",
           "Transfer-Encoding": "chunked",
+          TE: "trailers",
+          "Keep-Alive": "timeout=5",
         },
       }),
     );
 
-    expect(lastUpstreamReq?.headers["connection"]).toBeUndefined();
+    // The gateway must not forward client-supplied hop-by-hop headers.
+    // (Note: `Connection` is intentionally not asserted here — fetch sets its
+    // own `Connection: keep-alive` on the outgoing request as a transport
+    // concern, independent of what the gateway passes through.)
     expect(lastUpstreamReq?.headers["transfer-encoding"]).toBeUndefined();
+    expect(lastUpstreamReq?.headers["te"]).toBeUndefined();
+    expect(lastUpstreamReq?.headers["keep-alive"]).toBeUndefined();
   });
 
   it("passes through non-hop-by-hop custom headers to the upstream", async () => {
