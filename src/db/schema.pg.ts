@@ -64,6 +64,15 @@ export const webhookEventStatusEnum = pgEnum("webhook_event_status", [
 
 export const apiKeyStatusEnum = pgEnum("api_key_status", ["active", "revoked", "expired"]);
 
+// Outcome of a single proxied request to the upstream video-generation server.
+export const requestOutcomeEnum = pgEnum("request_outcome", [
+  "success", // upstream responded with a 2xx
+  "upstream_error", // upstream responded with a 4xx/5xx
+  "timeout", // upstream did not respond within UPSTREAM_TIMEOUT_MS
+  "gateway_error", // connection/transport failure reaching upstream
+  "blocked", // rejected at the gateway before reaching upstream (e.g. insufficient credits)
+]);
+
 // ─────────────────────────────────────────────
 // CONSUMERS (Users / Tenants)
 // ─────────────────────────────────────────────
@@ -527,6 +536,71 @@ export const auditLogs = pgTable(
 );
 
 // ─────────────────────────────────────────────
+// API REQUEST LOGS (per-request proxy access log)
+// ─────────────────────────────────────────────
+//
+// One row per request that the gateway forwards (or attempts to forward) to the
+// upstream video-generation server. This is the raw access log: which endpoint
+// was hit, the resulting status code, and how long the upstream took to respond.
+
+export const apiRequestLogs = pgTable(
+  "api_request_logs",
+  {
+    id: text("id").primaryKey(),
+
+    // Correlation id shared with the structured application logs for one request.
+    requestId: text("request_id").notNull(),
+
+    // Caller identity (nullable: deletes set null, and unauthenticated paths leave them empty).
+    consumerId: text("consumer_id").references(() => consumers.id, { onDelete: "set null" }),
+    apiKeyId: text("api_key_id").references(() => apiKeys.id, { onDelete: "set null" }),
+
+    // What got hit.
+    method: text("method").notNull(),
+    path: text("path").notNull(), // gateway-normalized path, e.g. /api/v1/project/
+    upstreamUrl: text("upstream_url"), // full target URL on the video server (null if blocked before forwarding)
+
+    // Result.
+    outcome: requestOutcomeEnum("outcome").notNull(),
+    success: boolean("success").notNull().default(false), // true when upstream returned 2xx
+    statusCode: integer("status_code").notNull(), // status the gateway returned to the client
+    upstreamStatusCode: integer("upstream_status_code"), // raw upstream status (null on timeout/transport error/blocked)
+
+    // Latency.
+    durationMs: integer("duration_ms").notNull(), // total gateway handling time
+    upstreamDurationMs: integer("upstream_duration_ms"), // upstream round-trip only (the "time to respond")
+
+    // Payload sizes (bytes), best-effort.
+    requestBytes: integer("request_bytes"),
+    responseBytes: integer("response_bytes"),
+    contentType: text("content_type"),
+
+    // Failure detail.
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+
+    // Billing linkage for this request, if credits were charged.
+    creditsCharged: real("credits_charged"),
+
+    // Client context.
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+
+    metadata: jsonb("metadata"),
+
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("api_request_logs_consumer_idx").on(t.consumerId),
+    index("api_request_logs_request_id_idx").on(t.requestId),
+    index("api_request_logs_created_at_idx").on(t.createdAt),
+    index("api_request_logs_outcome_idx").on(t.outcome),
+    index("api_request_logs_status_idx").on(t.statusCode),
+    index("api_request_logs_path_idx").on(t.path),
+  ],
+);
+
+// ─────────────────────────────────────────────
 // EXPORT ALL
 // ─────────────────────────────────────────────
 
@@ -538,6 +612,7 @@ export const pgSchema = {
   paymentProviderEnum,
   webhookEventStatusEnum,
   apiKeyStatusEnum,
+  requestOutcomeEnum,
   consumers,
   apiKeys,
   plans,
@@ -552,4 +627,5 @@ export const pgSchema = {
   webhookDeliveries,
   usageSnapshots,
   auditLogs,
+  apiRequestLogs,
 };

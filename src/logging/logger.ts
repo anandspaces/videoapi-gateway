@@ -85,6 +85,7 @@ const EVENT_MESSAGES: Record<string, string> = {
   "proxy.forward.start": "Forwarding request to upstream API",
   "proxy.forward.success": "Upstream API responded",
   "proxy.forward.failed": "Upstream API request failed",
+  "proxy.log.failed": "Failed to persist proxy request access log",
 };
 
 function inferMessage(event: string): string {

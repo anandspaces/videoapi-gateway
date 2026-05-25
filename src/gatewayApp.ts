@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { normalizeGatewayPathname } from "./auth/apiPath.ts";
 import { createAuthMiddleware } from "./auth/verifyApiKey.ts";
-import type { DbAccess } from "./db/access.ts";
+import type { DbAccess, RequestOutcome } from "./db/access.ts";
 import type { Env } from "./env.ts";
 import { envelope } from "./http/response.ts";
 import { logError, logInfo, logWarn } from "./logging/logger.ts";
@@ -94,6 +94,52 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
     const pathAndQuery = `${pq}${url.search}`;
     const method = c.req.method;
 
+    // ── Access-log scaffolding ──────────────────────────────────────────────
+    const startedAt = Date.now();
+    const identity = c.get("apiKey");
+    const clientIp =
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || c.req.header("x-real-ip") || null;
+    const userAgent = c.req.header("user-agent") ?? null;
+    const reqLen = Number(c.req.header("content-length"));
+    const requestBytes = Number.isFinite(reqLen) && reqLen >= 0 ? reqLen : null;
+    let creditsCharged: number | null = null;
+
+    // Fire-and-forget: persisting the access log must never block or fail the
+    // client request, so failures are swallowed into a warning log line.
+    const recordLog = (fields: {
+      outcome: RequestOutcome;
+      success: boolean;
+      statusCode: number;
+      upstreamStatusCode: number | null;
+      upstreamUrl: string | null;
+      upstreamDurationMs: number | null;
+      responseBytes?: number | null;
+      contentType?: string | null;
+      errorCode?: string | null;
+      errorMessage?: string | null;
+    }) => {
+      void dbAccess
+        .recordProxyRequest({
+          requestId,
+          consumerId: identity?.consumerId ?? null,
+          apiKeyId: identity?.id ?? null,
+          method,
+          path: pathname,
+          durationMs: Date.now() - startedAt,
+          requestBytes,
+          ipAddress: clientIp,
+          userAgent,
+          creditsCharged,
+          ...fields,
+        })
+        .catch((e) =>
+          logWarn("proxy.log.failed", {
+            requestId,
+            error: e instanceof Error ? e.message : String(e),
+          }),
+        );
+    };
+
     const isVideoGenProjectCreate = method === "POST" && (pq === "/project/" || pq === "/project");
 
     if (isVideoGenProjectCreate) {
@@ -108,6 +154,15 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
           consumerId: identity.consumerId,
           balance: debit.balance,
         });
+        recordLog({
+          outcome: "blocked",
+          success: false,
+          statusCode: 402,
+          upstreamStatusCode: null,
+          upstreamUrl: null,
+          upstreamDurationMs: null,
+          errorCode: "insufficient_credits",
+        });
         return c.json(
           envelope(402, "Insufficient credits", {
             error: "insufficient_credits",
@@ -117,6 +172,7 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
           402,
         );
       }
+      creditsCharged = env.PROJECT_CREATE_CREDIT_COST;
     }
 
     const target = joinUpstreamUrl(env.UPSTREAM_BASE_URL, pathAndQuery);
@@ -131,6 +187,7 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
 
     const body = method === "GET" || method === "HEAD" ? undefined : (c.req.raw.body ?? undefined);
 
+    const upstreamStart = Date.now();
     let upstream: Response;
     try {
       upstream = await proxyToUpstream({
@@ -141,8 +198,9 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
         timeoutMs: env.UPSTREAM_TIMEOUT_MS,
       });
     } catch (e) {
-      const msg =
-        e instanceof Error && e.name === "AbortError" ? "Upstream timeout" : "Upstream error";
+      const upstreamDurationMs = Date.now() - upstreamStart;
+      const isTimeout = e instanceof Error && e.name === "AbortError";
+      const msg = isTimeout ? "Upstream timeout" : "Upstream error";
       logWarn("proxy.forward.failed", {
         requestId,
         method: c.req.method,
@@ -150,8 +208,19 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
         target,
         error: e instanceof Error ? e.message : String(e),
       });
+      recordLog({
+        outcome: isTimeout ? "timeout" : "gateway_error",
+        success: false,
+        statusCode: 502,
+        upstreamStatusCode: null,
+        upstreamUrl: target,
+        upstreamDurationMs,
+        errorCode: isTimeout ? "upstream_timeout" : "bad_gateway",
+        errorMessage: e instanceof Error ? e.message : String(e),
+      });
       return c.json(envelope(502, msg, { error: "bad_gateway" }), 502);
     }
+    const upstreamDurationMs = Date.now() - upstreamStart;
 
     const responseHeaders = filterResponseHeaders(upstream);
     const contentType = upstream.headers.get("content-type") ?? "";
@@ -172,22 +241,26 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
         upstreamStatus: upstream.status,
         contentType,
       });
-      return new Response(
-        JSON.stringify(
-          envelope(
-            upstream.status,
-            upstream.ok ? "Request successful" : "Upstream request failed",
-            {
-              upstream: upstreamJson,
-              status_code: upstream.status,
-            },
-          ),
-        ),
-        {
-          status: upstream.status,
-          headers: { "content-type": "application/json" },
-        },
+      const responseBody = JSON.stringify(
+        envelope(upstream.status, upstream.ok ? "Request successful" : "Upstream request failed", {
+          upstream: upstreamJson,
+          status_code: upstream.status,
+        }),
       );
+      recordLog({
+        outcome: upstream.ok ? "success" : "upstream_error",
+        success: upstream.ok,
+        statusCode: upstream.status,
+        upstreamStatusCode: upstream.status,
+        upstreamUrl: target,
+        upstreamDurationMs,
+        responseBytes: Buffer.byteLength(responseBody),
+        contentType,
+      });
+      return new Response(responseBody, {
+        status: upstream.status,
+        headers: { "content-type": "application/json" },
+      });
     }
 
     const upstreamText = await upstream.text();
@@ -197,6 +270,16 @@ export function buildGatewayApp(ctx: { env: Env; dbAccess: DbAccess }): Hono {
       path: pathname,
       target,
       upstreamStatus: upstream.status,
+      contentType,
+    });
+    recordLog({
+      outcome: upstream.ok ? "success" : "upstream_error",
+      success: upstream.ok,
+      statusCode: upstream.status,
+      upstreamStatusCode: upstream.status,
+      upstreamUrl: target,
+      upstreamDurationMs,
+      responseBytes: Buffer.byteLength(upstreamText),
       contentType,
     });
     return new Response(

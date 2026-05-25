@@ -15,6 +15,13 @@
       "when": 1777574432372,
       "tag": "0001_fixed_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779718233754,
+      "tag": "0002_outstanding_bulldozer",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import postgres from "postgres";
 import { hashApiKey, randomApiKey, randomId } from "../crypto/hash.ts";
 import {
   apiKeys as pgApiKeys,
+  apiRequestLogs as pgApiRequestLogs,
   auditLogs as pgAuditLogs,
   backendProviders as pgBackendProviders,
   consumers as pgConsumers,
@@ -34,6 +35,33 @@ const drizzleSchema = {
   webhookDeliveries: pgWebhookDeliveries,
   usageSnapshots: pgUsageSnapshots,
   auditLogs: pgAuditLogs,
+  apiRequestLogs: pgApiRequestLogs,
+};
+
+export type RequestOutcome = "success" | "upstream_error" | "timeout" | "gateway_error" | "blocked";
+
+export type RecordProxyRequestInput = {
+  requestId: string;
+  consumerId: string | null;
+  apiKeyId: string | null;
+  method: string;
+  path: string;
+  upstreamUrl: string | null;
+  outcome: RequestOutcome;
+  success: boolean;
+  statusCode: number;
+  upstreamStatusCode: number | null;
+  durationMs: number;
+  upstreamDurationMs: number | null;
+  requestBytes?: number | null;
+  responseBytes?: number | null;
+  contentType?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  creditsCharged?: number | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 export type ApiKeyRow = {
@@ -117,6 +145,8 @@ export type DbAccess = {
     consumerId: string,
     cost: number,
   ) => Promise<VideoGenDeductResult>;
+  /** Append one access-log row for a proxied (or blocked) upstream request. */
+  recordProxyRequest: (entry: RecordProxyRequestInput) => Promise<void>;
   close: () => Promise<void>;
 };
 
@@ -386,6 +416,32 @@ export function createDbAccess(databaseUrl: string, pepper: string): DbAccess {
         return { ok: false, reason: "insufficient_credits", balance: 0 };
       }
       return { ok: true, balanceAfter: result.balanceAfter };
+    },
+    async recordProxyRequest(entry) {
+      await db.insert(pgApiRequestLogs).values({
+        id: randomId(),
+        requestId: entry.requestId,
+        consumerId: entry.consumerId,
+        apiKeyId: entry.apiKeyId,
+        method: entry.method,
+        path: entry.path,
+        upstreamUrl: entry.upstreamUrl,
+        outcome: entry.outcome,
+        success: entry.success,
+        statusCode: entry.statusCode,
+        upstreamStatusCode: entry.upstreamStatusCode,
+        durationMs: entry.durationMs,
+        upstreamDurationMs: entry.upstreamDurationMs,
+        requestBytes: entry.requestBytes ?? null,
+        responseBytes: entry.responseBytes ?? null,
+        contentType: entry.contentType ?? null,
+        errorCode: entry.errorCode ?? null,
+        errorMessage: entry.errorMessage ?? null,
+        creditsCharged: entry.creditsCharged ?? null,
+        ipAddress: entry.ipAddress ?? null,
+        userAgent: entry.userAgent ?? null,
+        metadata: entry.metadata ?? null,
+      });
     },
     async close() {
       await sql.end();
